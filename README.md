@@ -41,6 +41,10 @@ Tujuan utama: mempermudah masyarakat menjadwalkan penjemputan sampah sekaligus m
 - Frontend: React
 - Tools: Postman, GitHub, VS Code
 
+
+## 📜 Lisensi
+Proyek ini dibuat untuk tujuan akademik. Tidak untuk penggunaan komersial.
+
 ## 🚀 Cara Menjalankan
 ```bash
 git clone https://github.com/win-ter-ethreal/Meteor-08_Recyclein.git
@@ -48,5 +52,4 @@ cd Meteor-08_Recyclein
 npm install
 npm start
 
-## 📜 Lisensi
-Proyek ini dibuat untuk tujuan akademik. Tidak untuk penggunaan komersial.
+
