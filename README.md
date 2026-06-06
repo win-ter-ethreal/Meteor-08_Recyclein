@@ -39,7 +39,7 @@ Tujuan utama: mempermudah masyarakat menjadwalkan penjemputan sampah sekaligus m
 - Backend: Node.js + Express
 - Database: MySQL
 - Frontend: React
-- Tools: Postman, GitHub, VS Code
+- Tools: Postman, GitHub, VSCode
 
 ## 🚀 Cara Menjalankan
 ```bash
