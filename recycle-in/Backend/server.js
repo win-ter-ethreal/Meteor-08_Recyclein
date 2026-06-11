@@ -45,6 +45,9 @@ app.post('/api/login', async (req, res) => {
         if (rows.length === 0) return res.status(400).json({ error: 'Email tidak ditemukan' });
 
         const user = rows[0];
+        const isActive = user.is_active !== undefined ? user.is_active : 1;
+        if (!isActive) return res.status(403).json({ error: 'Akun Anda telah dinonaktifkan. Hubungi admin.' });
+
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) return res.status(400).json({ error: 'Password salah' });
 
@@ -81,6 +84,49 @@ const adminMiddleware = (req, res, next) => {
     if (req.user.role !== 'admin') return res.status(403).json({ error: 'Akses ditolak, bukan Admin' });
     next();
 };
+
+// ================= PROFILE =================
+app.get('/api/profile', authMiddleware, async (req, res) => {
+    try {
+        const [rows] = await db.query('SELECT id_user, nama, email, role, poin, COALESCE(is_active, 1) as is_active FROM users WHERE id_user = ?', [req.user.id]);
+        if (rows.length === 0) return res.status(404).json({ error: 'User tidak ditemukan' });
+        const user = rows[0];
+        res.json({ id: user.id_user, name: user.nama, email: user.email, role: user.role, points: user.poin, is_active: user.is_active });
+    } catch (error) {
+        console.error("Profile Error:", error);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+app.put('/api/profile', authMiddleware, async (req, res) => {
+    const { name, email } = req.body;
+    try {
+        await db.query('UPDATE users SET nama = ?, email = ? WHERE id_user = ?', [name, email, req.user.id]);
+        const [rows] = await db.query('SELECT id_user, nama, email, role, poin FROM users WHERE id_user = ?', [req.user.id]);
+        const user = rows[0];
+        res.json({ id: user.id_user, name: user.nama, email: user.email, role: user.role, points: user.poin });
+    } catch (error) {
+        if (error.code === 'ER_DUP_ENTRY') return res.status(400).json({ error: 'Email sudah digunakan' });
+        console.error("Update Profile Error:", error);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+app.put('/api/profile/password', authMiddleware, async (req, res) => {
+    const { currentPassword, newPassword } = req.body;
+    try {
+        const [rows] = await db.query('SELECT password FROM users WHERE id_user = ?', [req.user.id]);
+        if (rows.length === 0) return res.status(404).json({ error: 'User tidak ditemukan' });
+        const isMatch = await bcrypt.compare(currentPassword, rows[0].password);
+        if (!isMatch) return res.status(400).json({ error: 'Password saat ini salah' });
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        await db.query('UPDATE users SET password = ? WHERE id_user = ?', [hashedPassword, req.user.id]);
+        res.json({ message: 'Password berhasil diubah!' });
+    } catch (error) {
+        console.error("Change Password Error:", error);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
 
 // ================= KATEGORI SAMPAH =================
 app.get('/api/kategori', async (req, res) => {
@@ -143,14 +189,15 @@ app.post('/api/rewards/redeem', authMiddleware, async (req, res) => {
     try {
         await db.query('START TRANSACTION');
 
-        const [userRows] = await db.query('SELECT poin FROM users WHERE id_user = ?', [id_user]);
-        const [rewardRows] = await db.query('SELECT * FROM reward WHERE id_reward = ?', [id_reward]);
+    const [userRows] = await db.query('SELECT poin FROM users WHERE id_user = ?', [id_user]);
+    const [rewardRows] = await db.query('SELECT * FROM reward WHERE id_reward = ?', [id_reward]);
 
-        const user = userRows[0];
-        const reward = rewardRows[0];
+    const user = userRows[0];
+    if (!user) { await db.query('ROLLBACK'); return res.status(404).json({ error: 'User tidak ditemukan' }); }
+    const reward = rewardRows[0];
 
-        if (!reward || reward.stok <= 0) { await db.query('ROLLBACK'); return res.status(400).json({ error: 'Stok habis' }); }
-        if (user.poin < reward.poin_dibutuhkan) { await db.query('ROLLBACK'); return res.status(400).json({ error: 'Poin tidak cukup' }); }
+    if (!reward || reward.stok <= 0) { await db.query('ROLLBACK'); return res.status(400).json({ error: 'Stok habis' }); }
+    if (user.poin < reward.poin_dibutuhkan) { await db.query('ROLLBACK'); return res.status(400).json({ error: 'Poin tidak cukup' }); }
 
         await db.query('UPDATE users SET poin = poin - ? WHERE id_user = ?', [reward.poin_dibutuhkan, id_user]);
         await db.query('UPDATE reward SET stok = stok - 1 WHERE id_reward = ?', [id_reward]);
@@ -195,7 +242,7 @@ app.get('/api/admin/stats', authMiddleware, adminMiddleware, async (req, res) =>
 // GET Admin Users (Ditambahkan karena AppContext memintanya)
 app.get('/api/admin/users', authMiddleware, adminMiddleware, async (req, res) => {
     try {
-        const [rows] = await db.query('SELECT id_user as id, nama as name, email, poin as points, role, created_at FROM users');
+        const [rows] = await db.query('SELECT id_user, nama, email, poin, role, created_at, COALESCE(is_active, 1) as is_active FROM users');
         res.json(rows);
     } catch (error) {
         console.error("Admin Users Error:", error);
@@ -250,6 +297,70 @@ app.put('/api/admin/reservasi/:id', authMiddleware, adminMiddleware, async (req,
     } catch (error) {
         console.error("Update Status Error:", error);
         res.status(500).json({ error: 'Gagal update status' });
+    }
+});
+
+// Admin: Reset Password User
+app.put('/api/admin/users/:id/reset-password', authMiddleware, adminMiddleware, async (req, res) => {
+    const { id } = req.params;
+    const defaultPassword = 'recycle123';
+    try {
+        const hashedPassword = await bcrypt.hash(defaultPassword, 10);
+        await db.query('UPDATE users SET password = ? WHERE id_user = ?', [hashedPassword, id]);
+        res.json({ message: `Password berhasil direset menjadi "${defaultPassword}"` });
+    } catch (error) {
+        console.error("Reset Password Error:", error);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+// Admin: Toggle Active Status User
+app.put('/api/admin/users/:id/toggle-status', authMiddleware, adminMiddleware, async (req, res) => {
+    const { id } = req.params;
+    try {
+        await db.query("SET @col_exists = (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_NAME = 'users' AND COLUMN_NAME = 'is_active')");
+        await db.query("SET @query = IF(@col_exists = 0, 'ALTER TABLE users ADD COLUMN is_active TINYINT(1) DEFAULT 1', 'SELECT 1')");
+        await db.query("PREPARE stmt FROM @query");
+        await db.query("EXECUTE stmt");
+        await db.query("DEALLOCATE PREPARE stmt");
+    } catch (e) { /* column might already exist */ }
+
+    try {
+        const [rows] = await db.query('SELECT is_active FROM users WHERE id_user = ?', [id]);
+        if (rows.length === 0) return res.status(404).json({ error: 'User tidak ditemukan' });
+        const currentStatus = rows[0].is_active !== undefined ? rows[0].is_active : 1;
+        const newStatus = currentStatus ? 0 : 1;
+        await db.query('UPDATE users SET is_active = ? WHERE id_user = ?', [newStatus, id]);
+        const statusText = newStatus ? 'diaktifkan' : 'dinonaktifkan';
+        res.json({ message: `User berhasil ${statusText}`, is_active: newStatus });
+    } catch (error) {
+        console.error("Toggle Status Error:", error);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+// Admin: Detail Reservasi dengan item sampah
+app.get('/api/admin/reservasi/:id/detail', authMiddleware, adminMiddleware, async (req, res) => {
+    const { id } = req.params;
+    try {
+        const [reservasi] = await db.query(`
+            SELECT r.id_reservasi, u.nama as user_nama, u.email as user_email, 
+                   r.tanggal_penjemputan, r.waktu_penjemputan, r.status_penjemputan, r.catatan
+            FROM reservasi_penjemputan r 
+            JOIN users u ON r.id_user = u.id_user
+            WHERE r.id_reservasi = ?
+        `, [id]);
+        if (reservasi.length === 0) return res.status(404).json({ error: 'Reservasi tidak ditemukan' });
+        const [items] = await db.query(`
+            SELECT d.estimasi_berat, k.nama_kategori, k.ikon
+            FROM detail_reservasi d
+            JOIN kategori_sampah k ON d.id_kategori = k.id_kategori
+            WHERE d.id_reservasi = ?
+        `, [id]);
+        res.json({ ...reservasi[0], items });
+    } catch (error) {
+        console.error("Detail Reservasi Error:", error);
+        res.status(500).json({ error: 'Server error' });
     }
 });
 

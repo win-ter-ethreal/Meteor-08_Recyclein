@@ -1,14 +1,14 @@
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useApp } from '../contexts/AppContext';
+import { useApp } from '../../contexts/AppContext';
 import { ArrowLeft, Recycle } from 'lucide-react';
 
-const Catalog = () => {
+const WasteCatalog = () => {
   const navigate = useNavigate();
   const { categories, fetchCategories } = useApp();
 
   useEffect(() => {
-    fetchCategories(); // Ambil data kategori dari MySQL
+    fetchCategories();
   }, []);
 
   return (
@@ -39,4 +39,4 @@ const Catalog = () => {
   );
 };
 
-export default Catalog;
+export default WasteCatalog;

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useApp } from '../contexts/AppContext';
+import { useApp } from '../../contexts/AppContext';
 import { Recycle, Mail, Lock, User, Phone, ArrowRight, Eye, EyeOff } from 'lucide-react';
 
 const Login = () => {
@@ -21,7 +21,6 @@ const Login = () => {
 
     try {
       if (isLogin) {
-        // PERBAIKAN: Bungkus email dan password di dalam { }
         const res = await login({ email, password });
 
         if (res.success) {
@@ -30,7 +29,6 @@ const Login = () => {
           alert(res.msg || 'Login gagal, periksa email dan password');
         }
       } else {
-        // PERBAIKAN: Bungkus name, email, dan password di dalam { }
         const res = await register({ name, email, password });
 
         if (res.success) {
@@ -49,16 +47,11 @@ const Login = () => {
 
   return (
     <div className="min-h-screen flex flex-col lg:flex-row">
-
-      {/* ==================== SISI KIRI: HERO SECTION ==================== */}
       <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-green-700 via-green-600 to-emerald-500 relative overflow-hidden flex-col justify-between p-12">
-
-        {/* Dekorasi Background */}
         <div className="absolute top-[-80px] left-[-80px] w-72 h-72 bg-white/10 rounded-full blur-3xl"></div>
         <div className="absolute bottom-[-120px] right-[-120px] w-96 h-96 bg-green-900/30 rounded-full blur-3xl"></div>
         <div className="absolute top-1/2 left-1/3 w-40 h-40 bg-emerald-400/20 rounded-full blur-2xl"></div>
 
-        {/* Logo */}
         <div className="relative z-10">
           <div className="flex items-center gap-3">
             <div className="bg-white/20 p-3 rounded-xl backdrop-blur-sm">
@@ -71,7 +64,6 @@ const Login = () => {
           </div>
         </div>
 
-        {/* Tagline Tengah */}
         <div className="relative z-10 space-y-6">
           <h2 className="text-5xl font-extrabold text-white leading-[1.2]">
             Jaga Bumi,<br />
@@ -82,7 +74,6 @@ const Login = () => {
             Ubah sampah menjadi poin, dan poin menjadi reward. Ayo mulai gaya hidup ramah lingkungan bersama Recycle-In!
           </p>
 
-          {/* Stats Mini */}
           <div className="flex gap-6">
             <div className="bg-white/10 backdrop-blur-sm px-5 py-3 rounded-xl">
               <p className="text-yellow-300 text-2xl font-bold">1,284+</p>
@@ -95,17 +86,13 @@ const Login = () => {
           </div>
         </div>
 
-        {/* Footer Kiri */}
         <div className="relative z-10">
           <p className="text-green-200/60 text-sm">© 2024 Recycle-In. All rights reserved.</p>
         </div>
       </div>
 
-      {/* ==================== SISI KANAN: FORM SECTION ==================== */}
       <div className="w-full lg:w-1/2 flex items-center justify-center p-6 sm:p-8 lg:p-12 bg-white min-h-screen">
         <div className="w-full max-w-[420px]">
-
-          {/* Logo Mobile (Hanya muncul di HP) */}
           <div className="lg:hidden flex items-center justify-center gap-2 mb-8">
             <div className="bg-green-50 p-2 rounded-lg">
               <Recycle className="text-primary w-6 h-6" />
@@ -113,7 +100,6 @@ const Login = () => {
             <h1 className="text-xl font-extrabold text-primary tracking-wide">Recycle-In</h1>
           </div>
 
-          {/* Header Form */}
           <div className="mb-8">
             <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">
               {isLogin ? 'Login Akun' : 'Registrasi Akun'}
@@ -123,10 +109,7 @@ const Login = () => {
             </p>
           </div>
 
-          {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
-
-            {/* Nama (Register only) */}
             {!isLogin && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">Nama Lengkap</label>
@@ -146,7 +129,6 @@ const Login = () => {
               </div>
             )}
 
-            {/* Email */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">Email</label>
               <div className="relative">
@@ -164,7 +146,6 @@ const Login = () => {
               </div>
             </div>
 
-            {/* No HP (Register only) */}
             {!isLogin && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">Nomor Handphone</label>
@@ -184,7 +165,6 @@ const Login = () => {
               </div>
             )}
 
-            {/* Password */}
             <div>
               <div className="flex items-center justify-between mb-1.5">
                 <label className="block text-sm font-medium text-gray-700">Password</label>
@@ -214,7 +194,6 @@ const Login = () => {
               </div>
             </div>
 
-            {/* Submit Button */}
             <button
               type="submit"
               disabled={loading}
@@ -231,14 +210,12 @@ const Login = () => {
             </button>
           </form>
 
-          {/* Divider */}
           <div className="flex items-center my-6">
             <div className="flex-1 h-px bg-gray-200"></div>
             <span className="px-4 text-gray-400 text-xs font-medium uppercase">atau masuk dengan</span>
             <div className="flex-1 h-px bg-gray-200"></div>
           </div>
 
-          {/* Social Login */}
           <div className="flex gap-3">
             <button className="flex-1 flex items-center justify-center gap-2 py-3 border border-gray-200 rounded-xl hover:bg-gray-50 transition-all text-gray-700 font-medium text-sm">
               <svg className="w-5 h-5" viewBox="0 0 24 24">
@@ -257,7 +234,6 @@ const Login = () => {
             </button>
           </div>
 
-          {/* Toggle Login/Register */}
           <div className="text-center mt-8 bg-gray-50 py-4 rounded-xl">
             <p className="text-gray-500 text-sm">
               {isLogin ? 'Belum punya akun?' : 'Sudah punya akun?'}
@@ -269,7 +245,6 @@ const Login = () => {
               </button>
             </p>
           </div>
-
         </div>
       </div>
     </div>

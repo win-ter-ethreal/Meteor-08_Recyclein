@@ -1,12 +1,11 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion'; // Library animasi
+import { motion } from 'framer-motion';
 import { Recycle, Truck, Gift, BookOpen, Leaf, ArrowRight } from 'lucide-react';
 
 const LandingPage = () => {
   const navigate = useNavigate();
 
-  // Variabel untuk animasi memudar dan naik
   const fadeUp = {
     hidden: { opacity: 0, y: 30 },
     visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" } }
@@ -18,7 +17,6 @@ const LandingPage = () => {
 
   return (
     <div className="min-h-screen bg-white overflow-hidden">
-      {/* Navbar */}
       <nav className="bg-white/80 backdrop-blur-md border-b border-gray-100 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
@@ -37,16 +35,12 @@ const LandingPage = () => {
         </div>
       </nav>
 
-      {/* Hero Section dengan Gambar & Animasi */}
       <section className="relative py-20 lg:py-32 bg-gradient-to-br from-green-50 via-white to-emerald-50">
-        {/* Dekorasi Background Blur */}
         <div className="absolute top-0 right-0 w-96 h-96 bg-green-200 rounded-full filter blur-3xl opacity-30 animate-pulse"></div>
         <div className="absolute bottom-0 left-0 w-80 h-80 bg-blue-200 rounded-full filter blur-3xl opacity-20"></div>
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col lg:flex-row items-center gap-12 relative z-10">
-          
-          {/* Teks Kiri */}
-          <motion.div 
+          <motion.div
             className="lg:w-1/2 text-center lg:text-left"
             initial="hidden"
             animate="visible"
@@ -68,21 +62,19 @@ const LandingPage = () => {
             </motion.div>
           </motion.div>
 
-          {/* Gambar Kanan */}
-          <motion.div 
+          <motion.div
             className="lg:w-1/2 flex justify-center"
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.8, ease: "easeOut" }}
           >
             <div className="relative w-full max-w-lg">
-              <img 
-                src="https://images.unsplash.com/photo-1532996122724-e3c354a0b15b?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" 
-                alt="Recycle" 
+              <img
+                src="https://images.unsplash.com/photo-1532996122724-e3c354a0b15b?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
+                alt="Recycle"
                 className="rounded-3xl shadow-2xl border-4 border-white transform hover:rotate-1 transition-transform duration-500"
               />
-              {/* Floating Card 1 */}
-              <motion.div 
+              <motion.div
                 className="absolute -bottom-6 -left-6 bg-white p-4 rounded-2xl shadow-xl flex items-center gap-3"
                 animate={{ y: [0, -10, 0] }}
                 transition={{ repeat: Infinity, duration: 3 }}
@@ -96,8 +88,7 @@ const LandingPage = () => {
                 </div>
               </motion.div>
 
-              {/* Floating Card 2 */}
-              <motion.div 
+              <motion.div
                 className="absolute -top-4 -right-4 bg-white p-4 rounded-2xl shadow-xl flex items-center gap-3"
                 animate={{ y: [0, 10, 0] }}
                 transition={{ repeat: Infinity, duration: 4, delay: 1 }}
@@ -115,15 +106,14 @@ const LandingPage = () => {
         </div>
       </section>
 
-      {/* Fitur Section dengan Animasi Scroll */}
       <section id="fitur" className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl lg:text-4xl font-extrabold text-gray-900 mb-4">Fitur Unggulan Kami</h2>
             <p className="text-gray-600 max-w-2xl mx-auto">Semua yang Anda butuhkan untuk memulai gaya hidup ramah lingkungan ada di sini.</p>
           </div>
-          
-          <motion.div 
+
+          <motion.div
             className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8"
             initial="hidden"
             whileInView="visible"
@@ -165,7 +155,6 @@ const LandingPage = () => {
         </div>
       </section>
 
-      {/* Footer */}
       <footer id="tentang" className="bg-gray-900 text-white py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <div className="flex items-center justify-center gap-2 mb-4">

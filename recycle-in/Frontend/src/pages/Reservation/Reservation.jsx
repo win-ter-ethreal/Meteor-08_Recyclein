@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useApp } from '../contexts/AppContext';
+import { useApp } from '../../contexts/AppContext';
 import { Camera, CheckCircle, ArrowLeft, PlusCircle, Trash2 } from 'lucide-react';
 
 const Reservation = () => {
@@ -8,59 +8,49 @@ const Reservation = () => {
   const { addReservation, categories, fetchCategories } = useApp();
   const navigate = useNavigate();
 
-  // State utama form
   const [tanggal, setTanggal] = useState('');
   const [waktu, setWaktu] = useState('08:00 - 12:00');
   const [catatan, setCatatan] = useState('');
   
-  // State untuk list sampah (Detail Reservasi berdasarkan ERD)
   const [items, setItems] = useState([
     { id_kategori: '', estimasi_berat: '' }
   ]);
 
-  // State Verifikasi
   const [isSeparated, setIsSeparated] = useState(false);
   const [isWeighed, setIsWeighed] = useState(false);
 
-  // Ambil kategori dari backend saat halaman dibuka
   useEffect(() => {
     fetchCategories();
   }, []);
 
-  // Fungsi untuk menambah baris item sampah
   const handleAddItem = () => {
     setItems([...items, { id_kategori: '', estimasi_berat: '' }]);
   };
 
-  // Fungsi untuk menghapus baris item sampah
   const handleRemoveItem = (index) => {
     const newItems = [...items];
     newItems.splice(index, 1);
     setItems(newItems);
   };
 
-  // Fungsi handle perubahan dropdown/berat di tiap baris
   const handleItemChange = (index, field, value) => {
     const newItems = [...items];
     newItems[index][field] = value;
     setItems(newItems);
   };
 
-  // Submit ke Backend
   const handleConfirm = async () => {
     if (!isSeparated || !isWeighed) {
       alert("Sampah harus dipilah dan ditimbang terlebih dahulu!");
       return;
     }
 
-    // Validasi item tidak boleh kosong
     const validItems = items.filter(item => item.id_kategori !== '' && item.estimasi_berat !== '');
     if (validItems.length === 0) {
       alert("Tambahkan minimal 1 jenis sampah!");
       return;
     }
 
-    // Susun payload sesuai ERD baru
     const payload = {
       tanggal_penjemputan: tanggal,
       waktu_penjemputan: waktu,
@@ -87,7 +77,6 @@ const Reservation = () => {
         <h2 className="flex-1 text-center font-bold text-lg">{step === 1 ? 'Reservasi Penjemputan' : 'Verifikasi Sampah'}</h2>
       </div>
 
-      {/* ============ STEP 1: ISI RESERVASI ============ */}
       {step === 1 ? (
         <div className="p-6 space-y-4">
           <div>
@@ -109,7 +98,6 @@ const Reservation = () => {
             </select>
           </div>
 
-          {/* List Kategori Sampah (Detail Reservasi) */}
           <div>
             <label className="block text-sm font-semibold mb-2">Jenis & Berat Sampah</label>
             <div className="space-y-3">
@@ -166,7 +154,6 @@ const Reservation = () => {
           </button>
         </div>
       ) : (
-        /* ============ STEP 2: VERIFIKASI ============ */
         <div className="p-6 space-y-4">
           <div className="space-y-3">
             <label className="flex items-center gap-3 border p-3 rounded-lg cursor-pointer hover:bg-gray-50">
