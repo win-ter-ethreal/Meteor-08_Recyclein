@@ -6,12 +6,16 @@ const db = require('./db');
 require('dotenv').config();
 
 const app = express();
-app.use(cors());
+app.use(cors({
+    origin: '*',
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+}));
 app.use(express.json());
 
 // ================= AUTHENTICATION =================
 
-// 1. Registrasi (Sudah digabung, tidak ada duplikat)
+// 1. Registrasi
 app.post('/api/register', async (req, res) => {
     console.log("=== REGISTER REQUEST ===");
     console.log("Data diterima:", req.body);
@@ -20,11 +24,9 @@ app.post('/api/register', async (req, res) => {
         return res.status(400).json({ error: 'Data register tidak diterima oleh server' });
     }
 
-    // Frontend mengirim 'name', DB menyimpan 'nama'
-    const { name: nama, email, password } = req.body; 
+    const { name: nama, email, password } = req.body;
     try {
         const hashedPassword = await bcrypt.hash(password, 10);
-        // Menambahkan role dan poin default agar tidak error NOT NULL di DB
         await db.query('INSERT INTO users (nama, email, password, role, poin) VALUES (?, ?, ?, "user", 0)',
             [nama, email, hashedPassword]);
         res.status(201).json({ message: 'User berhasil didaftarkan!' });
@@ -53,7 +55,6 @@ app.post('/api/login', async (req, res) => {
 
         const token = jwt.sign({ id: user.id_user, role: user.role }, process.env.JWT_SECRET, { expiresIn: '1d' });
 
-        // Menggunakan ALIAS agar Frontend menerimanya sebagai 'id', 'name', 'points'
         res.json({
             token,
             user: { id: user.id_user, name: user.nama, email: user.email, role: user.role, points: user.poin || 0 }
@@ -72,7 +73,7 @@ const authMiddleware = (req, res, next) => {
         const token = authHeader.split(' ')[1];
         if (!token) return res.status(401).json({ error: 'Token tidak valid' });
         const verified = jwt.verify(token, process.env.JWT_SECRET);
-        req.user = verified; // Berisi { id: id_user, role: 'user'/'admin' }
+        req.user = verified;
         next();
     } catch (err) {
         res.status(400).json({ error: 'Token tidak valid' });
@@ -173,7 +174,6 @@ app.post('/api/reservasi', authMiddleware, async (req, res) => {
 // ================= REWARD & REDEEM =================
 app.get('/api/rewards', async (req, res) => {
     try {
-        // ALIAS penting agar Frontend bisa baca reward.points dan reward.title
         const [rows] = await db.query('SELECT id_reward as id, nama_reward as title, poin_dibutuhkan as points, stok as stock FROM reward');
         res.json(rows);
     } catch (error) {
@@ -189,15 +189,15 @@ app.post('/api/rewards/redeem', authMiddleware, async (req, res) => {
     try {
         await db.query('START TRANSACTION');
 
-    const [userRows] = await db.query('SELECT poin FROM users WHERE id_user = ?', [id_user]);
-    const [rewardRows] = await db.query('SELECT * FROM reward WHERE id_reward = ?', [id_reward]);
+        const [userRows] = await db.query('SELECT poin FROM users WHERE id_user = ?', [id_user]);
+        const [rewardRows] = await db.query('SELECT * FROM reward WHERE id_reward = ?', [id_reward]);
 
-    const user = userRows[0];
-    if (!user) { await db.query('ROLLBACK'); return res.status(404).json({ error: 'User tidak ditemukan' }); }
-    const reward = rewardRows[0];
+        const user = userRows[0];
+        if (!user) { await db.query('ROLLBACK'); return res.status(404).json({ error: 'User tidak ditemukan' }); }
+        const reward = rewardRows[0];
 
-    if (!reward || reward.stok <= 0) { await db.query('ROLLBACK'); return res.status(400).json({ error: 'Stok habis' }); }
-    if (user.poin < reward.poin_dibutuhkan) { await db.query('ROLLBACK'); return res.status(400).json({ error: 'Poin tidak cukup' }); }
+        if (!reward || reward.stok <= 0) { await db.query('ROLLBACK'); return res.status(400).json({ error: 'Stok habis' }); }
+        if (user.poin < reward.poin_dibutuhkan) { await db.query('ROLLBACK'); return res.status(400).json({ error: 'Poin tidak cukup' }); }
 
         await db.query('UPDATE users SET poin = poin - ? WHERE id_user = ?', [reward.poin_dibutuhkan, id_user]);
         await db.query('UPDATE reward SET stok = stok - 1 WHERE id_reward = ?', [id_reward]);
@@ -220,11 +220,11 @@ app.get('/api/admin/stats', authMiddleware, adminMiddleware, async (req, res) =>
         const [userCount] = await db.query('SELECT COUNT(*) as total FROM users WHERE role = "user"');
         const [mitraCount] = await db.query('SELECT COUNT(*) as total FROM users WHERE role = "mitra"');
         const [reservasiCount] = await db.query('SELECT COUNT(*) as total FROM reservasi_penjemputan');
-        
+
         let dashboardStats = { total_sampah_daur: 0, pohon_diselamatkan: 0 };
         try {
             const [dashboard] = await db.query('SELECT * FROM dashboard_lingkungan LIMIT 1');
-            if(dashboard.length > 0) dashboardStats = dashboard[0];
+            if (dashboard.length > 0) dashboardStats = dashboard[0];
         } catch (e) { /* Abaikan jika tabel belum ada */ }
 
         res.json({
@@ -239,7 +239,6 @@ app.get('/api/admin/stats', authMiddleware, adminMiddleware, async (req, res) =>
     }
 });
 
-// GET Admin Users (Ditambahkan karena AppContext memintanya)
 app.get('/api/admin/users', authMiddleware, adminMiddleware, async (req, res) => {
     try {
         const [rows] = await db.query('SELECT id_user, nama, email, poin, role, created_at, COALESCE(is_active, 1) as is_active FROM users');
@@ -279,14 +278,14 @@ app.put('/api/admin/reservasi/:id', authMiddleware, adminMiddleware, async (req,
             if (reservasiRows.length > 0 && detailRows[0].total_berat > 0) {
                 const id_user = reservasiRows[0].id_user;
                 const totalBerat = detailRows[0].total_berat;
-                const poinDidapat = Math.round(totalBerat * 100); 
+                const poinDidapat = Math.round(totalBerat * 100);
 
                 await db.query('UPDATE users SET poin = poin + ? WHERE id_user = ?', [poinDidapat, id_user]);
-                
-                try { 
+
+                try {
                     await db.query('INSERT INTO poin_user (id_user, jumlah_poin, keterangan) VALUES (?, ?, ?)',
                         [id_user, poinDidapat, `Penjemputan sampah #${id} selesai (${totalBerat} kg)`]);
-                } catch(e) { console.log("Tabel poin_user belum ada, dilewati"); }
+                } catch (e) { console.log("Tabel poin_user belum ada, dilewati"); }
 
                 await db.query('INSERT INTO transaksi_poin (id_user, tipe_transaksi, jumlah_poin, keterangan) VALUES (?, "Masuk", ?, ?)',
                     [id_user, poinDidapat, `Poin dari reservasi #${id}`]);
@@ -300,7 +299,6 @@ app.put('/api/admin/reservasi/:id', authMiddleware, adminMiddleware, async (req,
     }
 });
 
-// Admin: Reset Password User
 app.put('/api/admin/users/:id/reset-password', authMiddleware, adminMiddleware, async (req, res) => {
     const { id } = req.params;
     const defaultPassword = 'recycle123';
@@ -314,17 +312,8 @@ app.put('/api/admin/users/:id/reset-password', authMiddleware, adminMiddleware, 
     }
 });
 
-// Admin: Toggle Active Status User
 app.put('/api/admin/users/:id/toggle-status', authMiddleware, adminMiddleware, async (req, res) => {
     const { id } = req.params;
-    try {
-        await db.query("SET @col_exists = (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_NAME = 'users' AND COLUMN_NAME = 'is_active')");
-        await db.query("SET @query = IF(@col_exists = 0, 'ALTER TABLE users ADD COLUMN is_active TINYINT(1) DEFAULT 1', 'SELECT 1')");
-        await db.query("PREPARE stmt FROM @query");
-        await db.query("EXECUTE stmt");
-        await db.query("DEALLOCATE PREPARE stmt");
-    } catch (e) { /* column might already exist */ }
-
     try {
         const [rows] = await db.query('SELECT is_active FROM users WHERE id_user = ?', [id]);
         if (rows.length === 0) return res.status(404).json({ error: 'User tidak ditemukan' });
@@ -339,8 +328,7 @@ app.put('/api/admin/users/:id/toggle-status', authMiddleware, adminMiddleware, a
     }
 });
 
-// Admin: Detail Reservasi dengan item sampah
-app.get('/api/admin/reservasi/:id/detail', authMiddleware, adminMiddleware, async (req, res) => {
+app.get('/api/admin/reservasi/:id', authMiddleware, adminMiddleware, async (req, res) => {
     const { id } = req.params;
     try {
         const [reservasi] = await db.query(`
@@ -360,6 +348,90 @@ app.get('/api/admin/reservasi/:id/detail', authMiddleware, adminMiddleware, asyn
         res.json({ ...reservasi[0], items });
     } catch (error) {
         console.error("Detail Reservasi Error:", error);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+// ================= GACHA & CLAIM SYSTEM =================
+
+// 1. User melakukan tarik Gacha
+app.post('/api/gacha/pull', authMiddleware, async (req, res) => {
+    const { reward_name, rarity, cost } = req.body;
+    const id_user = req.user.id;
+
+    try {
+        await db.query('START TRANSACTION');
+
+        const [userRows] = await db.query('SELECT poin FROM users WHERE id_user = ?', [id_user]);
+        if (userRows[0].poin < cost) {
+            await db.query('ROLLBACK');
+            return res.status(400).json({ error: 'Poin tidak cukup' });
+        }
+
+        await db.query('UPDATE users SET poin = poin - ? WHERE id_user = ?', [cost, id_user]);
+
+        // PERBAIKAN: Tambahkan status default "Menunggu Klaim" secara eksplisit
+        await db.query('INSERT INTO claim_history (id_user, reward_name, rarity, status) VALUES (?, ?, ?, "Menunggu Klaim")',
+            [id_user, reward_name, rarity]);
+
+        await db.query('COMMIT');
+        res.json({ message: 'Gacha berhasil! Hadiah masuk ke riwayat klaim.' });
+    } catch (error) {
+        await db.query('ROLLBACK');
+        console.error("Gacha Pull Error:", error);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+// 2. User melihat riwayat hadiah & status klaim (Hanya milik user tersebut)
+app.get('/api/gacha/history', authMiddleware, async (req, res) => {
+    try {
+        const [rows] = await db.query('SELECT * FROM claim_history WHERE id_user = ? ORDER BY created_at DESC', [req.user.id]);
+        res.json(rows);
+    } catch (error) {
+        console.error("History Error:", error);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+// 3. User menekan tombol "Klaim Hadiah"
+app.put('/api/gacha/claim/:id', authMiddleware, async (req, res) => {
+    const { id } = req.params;
+    try {
+        await db.query('UPDATE claim_history SET status = "Diproses Admin" WHERE id_claim = ? AND id_user = ? AND status = "Menunggu Klaim"', [id, req.user.id]);
+        res.json({ message: 'Hadiah berhasil diklaim! Tunggu Admin memproses.' });
+    } catch (error) {
+        console.error("Claim Error:", error);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+// ================= ADMIN CLAIM (BARU) =================
+
+// 4. Admin: Melihat semua permintaan klaim dari semua user
+app.get('/api/admin/claims', authMiddleware, adminMiddleware, async (req, res) => {
+    try {
+        const [rows] = await db.query(`
+            SELECT ch.id_claim, ch.reward_name, ch.rarity, ch.status, ch.created_at as tanggal_klaim, u.nama as user_nama 
+            FROM claim_history ch 
+            JOIN users u ON ch.id_user = u.id_user 
+            ORDER BY ch.created_at DESC
+        `);
+        res.json(rows);
+    } catch (error) {
+        console.error("Admin Claims Error:", error);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+// 5. Admin: Menyetujui/Memberikan hadiah ke user
+app.put('/api/admin/claims/:id/approve', authMiddleware, adminMiddleware, async (req, res) => {
+    const { id } = req.params;
+    try {
+        await db.query('UPDATE claim_history SET status = "Selesai" WHERE id_claim = ?', [id]);
+        res.json({ message: 'Hadiah berhasil diproses dan diberikan ke user!' });
+    } catch (error) {
+        console.error("Admin Approve Claim Error:", error);
         res.status(500).json({ error: 'Server error' });
     }
 });
