@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Waktu pembuatan: 10 Jun 2026 pada 11.16
+-- Waktu pembuatan: 13 Jun 2026 pada 18.43
 -- Versi server: 10.4.32-MariaDB
 -- Versi PHP: 8.2.12
 
@@ -20,6 +20,33 @@ SET time_zone = "+00:00";
 --
 -- Database: `recycle_in`
 --
+
+-- --------------------------------------------------------
+
+--
+-- Struktur dari tabel `claim_history`
+--
+
+CREATE TABLE `claim_history` (
+  `id_claim` int(11) NOT NULL,
+  `id_user` int(11) NOT NULL,
+  `reward_name` varchar(255) NOT NULL,
+  `rarity` varchar(50) DEFAULT NULL,
+  `status` enum('Menunggu Klaim','Diproses Admin','Selesai') DEFAULT 'Menunggu Klaim',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data untuk tabel `claim_history`
+--
+
+INSERT INTO `claim_history` (`id_claim`, `id_user`, `reward_name`, `rarity`, `status`, `created_at`) VALUES
+(1, 2, 'Voucher Mitra Potongan 5%', 'Normal', 'Selesai', '2026-06-13 16:14:52'),
+(2, 2, 'Saldo Dana 5k', 'Normal', 'Selesai', '2026-06-13 16:18:52'),
+(3, 2, 'Saldo Dana 10k', 'Langka', 'Selesai', '2026-06-13 16:19:01'),
+(4, 2, 'Saldo Dana 5k', 'Normal', 'Selesai', '2026-06-13 16:25:24'),
+(5, 2, 'Saldo Dana 10k', 'Langka', 'Selesai', '2026-06-13 16:27:57'),
+(6, 2, 'Saldo Dana 5k', 'Normal', 'Selesai', '2026-06-13 16:38:11');
 
 -- --------------------------------------------------------
 
@@ -56,6 +83,19 @@ CREATE TABLE `detail_reservasi` (
   `estimasi_berat` float DEFAULT NULL,
   `foto_sampah` varchar(255) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data untuk tabel `detail_reservasi`
+--
+
+INSERT INTO `detail_reservasi` (`id_detail_reservasi`, `id_reservasi`, `id_kategori`, `estimasi_berat`, `foto_sampah`) VALUES
+(1, 1, 2, 10, NULL),
+(2, 2, 2, 5, NULL),
+(3, 2, 3, 5, NULL),
+(4, 3, 3, 16, NULL),
+(5, 3, 1, 3, NULL),
+(6, 3, 2, 1, NULL),
+(7, 3, 4, 2, NULL);
 
 -- --------------------------------------------------------
 
@@ -94,6 +134,16 @@ CREATE TABLE `poin_user` (
   `tanggal_dapat` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+--
+-- Dumping data untuk tabel `poin_user`
+--
+
+INSERT INTO `poin_user` (`id_poin`, `id_user`, `jumlah_poin`, `keterangan`, `tanggal_dapat`) VALUES
+(1, 3, 100, NULL, '2026-06-13 07:06:39'),
+(2, 2, 1000, 'Penjemputan sampah #2 selesai (10 kg)', '2026-06-13 15:18:10'),
+(3, 2, 1000, 'Penjemputan sampah #1 selesai (10 kg)', '2026-06-13 15:18:14'),
+(4, 2, 2200, 'Penjemputan sampah #3 selesai (22 kg)', '2026-06-13 15:25:23');
+
 -- --------------------------------------------------------
 
 --
@@ -123,6 +173,15 @@ CREATE TABLE `reservasi_penjemputan` (
   `catatan` text DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data untuk tabel `reservasi_penjemputan`
+--
+
+INSERT INTO `reservasi_penjemputan` (`id_reservasi`, `id_user`, `tanggal_penjemputan`, `waktu_penjemputan`, `status_penjemputan`, `catatan`, `created_at`) VALUES
+(1, 2, '2026-06-13', '08:00 - 12:00', 'Selesai', '', '2026-06-13 07:43:45'),
+(2, 2, '2026-06-13', '08:00 - 12:00', 'Selesai', '', '2026-06-13 14:54:08'),
+(3, 2, '2026-06-13', '13:00 - 17:00', 'Selesai', '', '2026-06-13 15:24:54');
 
 -- --------------------------------------------------------
 
@@ -162,6 +221,15 @@ CREATE TABLE `transaksi_poin` (
   `tanggal_transaksi` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+--
+-- Dumping data untuk tabel `transaksi_poin`
+--
+
+INSERT INTO `transaksi_poin` (`id_transaksi`, `id_user`, `tipe_transaksi`, `jumlah_poin`, `keterangan`, `tanggal_transaksi`) VALUES
+(1, 2, 'Masuk', 1000, 'Poin dari reservasi #2', '2026-06-13 15:18:10'),
+(2, 2, 'Masuk', 1000, 'Poin dari reservasi #1', '2026-06-13 15:18:14'),
+(3, 2, 'Masuk', 2200, 'Poin dari reservasi #3', '2026-06-13 15:25:23');
+
 -- --------------------------------------------------------
 
 --
@@ -175,20 +243,30 @@ CREATE TABLE `users` (
   `password` varchar(255) NOT NULL,
   `role` enum('user','admin','mitra') DEFAULT 'user',
   `poin` int(11) DEFAULT 0,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `is_active` tinyint(1) DEFAULT 1
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data untuk tabel `users`
 --
 
-INSERT INTO `users` (`id_user`, `nama`, `email`, `password`, `role`, `poin`, `created_at`) VALUES
-(1, 'Admin RecycleIn', 'admin@mail.com', '$2a$10$dummyhashplaceholder', 'admin', 0, '2026-06-07 09:27:39'),
-(2, 'riana', 'Rianakhlul@mail.com', '$2b$10$4Pj1kvpSum9cGJHerUQg5upumzbzHl7kdrBJ3fd.xlVEzFB0vtzLy', 'user', 0, '2026-06-08 03:23:45');
+INSERT INTO `users` (`id_user`, `nama`, `email`, `password`, `role`, `poin`, `created_at`, `is_active`) VALUES
+(1, 'Admin RecycleIn', 'admin@mail.com', '$2a$10$dummyhashplaceholder', 'admin', 0, '2026-06-07 09:27:39', 1),
+(2, 'riana', 'Rianakhlul@mail.com', '$2b$10$4Pj1kvpSum9cGJHerUQg5upumzbzHl7kdrBJ3fd.xlVEzFB0vtzLy', 'user', 1200, '2026-06-08 03:23:45', 1),
+(3, 'Rian akhlul fadli', 'riananakbaik@gmail.com', '$2b$10$XnJW23jYFGjMNr9TPEEAn.SAt19y1Y5d3N0MVy7HGXa9K1thUv6fG', 'user', 100, '2026-06-11 04:10:06', 1),
+(8, 'admin123', 'admin123@mail.com', '$2b$10$wXX0lz5YxwUWLXF9asVyXO1uWEoHFz5YjmHkZOKEkFBEfnFtXKTl.', 'admin', 0, '2026-06-13 07:11:15', 1);
 
 --
 -- Indexes for dumped tables
 --
+
+--
+-- Indeks untuk tabel `claim_history`
+--
+ALTER TABLE `claim_history`
+  ADD PRIMARY KEY (`id_claim`),
+  ADD KEY `id_user` (`id_user`);
 
 --
 -- Indeks untuk tabel `dashboard_lingkungan`
@@ -257,6 +335,12 @@ ALTER TABLE `users`
 --
 
 --
+-- AUTO_INCREMENT untuk tabel `claim_history`
+--
+ALTER TABLE `claim_history`
+  MODIFY `id_claim` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+
+--
 -- AUTO_INCREMENT untuk tabel `dashboard_lingkungan`
 --
 ALTER TABLE `dashboard_lingkungan`
@@ -266,7 +350,7 @@ ALTER TABLE `dashboard_lingkungan`
 -- AUTO_INCREMENT untuk tabel `detail_reservasi`
 --
 ALTER TABLE `detail_reservasi`
-  MODIFY `id_detail_reservasi` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id_detail_reservasi` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
 -- AUTO_INCREMENT untuk tabel `kategori_sampah`
@@ -278,7 +362,7 @@ ALTER TABLE `kategori_sampah`
 -- AUTO_INCREMENT untuk tabel `poin_user`
 --
 ALTER TABLE `poin_user`
-  MODIFY `id_poin` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id_poin` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT untuk tabel `redeem_reward`
@@ -290,7 +374,7 @@ ALTER TABLE `redeem_reward`
 -- AUTO_INCREMENT untuk tabel `reservasi_penjemputan`
 --
 ALTER TABLE `reservasi_penjemputan`
-  MODIFY `id_reservasi` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id_reservasi` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT untuk tabel `reward`
@@ -302,17 +386,23 @@ ALTER TABLE `reward`
 -- AUTO_INCREMENT untuk tabel `transaksi_poin`
 --
 ALTER TABLE `transaksi_poin`
-  MODIFY `id_transaksi` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id_transaksi` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT untuk tabel `users`
 --
 ALTER TABLE `users`
-  MODIFY `id_user` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id_user` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- Ketidakleluasaan untuk tabel pelimpahan (Dumped Tables)
 --
+
+--
+-- Ketidakleluasaan untuk tabel `claim_history`
+--
+ALTER TABLE `claim_history`
+  ADD CONSTRAINT `claim_history_ibfk_1` FOREIGN KEY (`id_user`) REFERENCES `users` (`id_user`);
 
 --
 -- Ketidakleluasaan untuk tabel `detail_reservasi`
